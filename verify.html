@@ -39,24 +39,24 @@ async function verifyInvoice() {
 
 const invoice = data[0];
 
-    document.getElementById("result").innerHTML = `
-        <h3>Invoice Found</h3>
+   document.getElementById("result").innerHTML = `
+    <h3>Invoice Found</h3>
 
-        <p><b>Invoice Number:</b>
-        ${invoice.invoice_number}</p>
+    <p><b>Invoice Number:</b>
+    ${invoice.invoice_number}</p>
 
-        <p><b>Verification ID:</b>
-        ${invoice.verification_id}</p>
+    <p><b>Verification ID:</b>
+    ${invoice.verification_id}</p>
 
-        <p><b>Name:</b>
-        ${data.insured_name}</p>
+    <p><b>Name:</b>
+    ${invoice.insured_name}</p>
 
-        <p><b>Company:</b>
-        ${data.insurance_company}</p>
+    <p><b>Company:</b>
+    ${invoice.insurance_company}</p>
 
-        <p><b>Total Amount:</b>
-        ${data.total_amount}</p>
-    `;
+    <p><b>Total Amount:</b>
+    ${invoice.total_amount}</p>
+`;
 }
 </script>
 
