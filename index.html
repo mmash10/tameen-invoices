@@ -1,12 +1,35 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tameen Invoice System</title>
 </head>
 <body>
-  <h1>Tameen Invoice System</h1>
-  <p>System is running successfully.</p>
+
+<h1>Tameen Invoice System</h1>
+<button id="testBtn">Test Supabase Connection</button>
+
+<p id="result"></p>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase.js"></script>
+
+<script>
+const supabase = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY
+);
+
+document.getElementById("testBtn").addEventListener("click", async () => {
+  const { data, error } = await supabase
+    .from("invoices")
+    .select("*")
+    .limit(1);
+
+  document.getElementById("result").innerText =
+    error ? error.message : "Connection Successful";
+});
+</script>
+
 </body>
 </html>
