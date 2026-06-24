@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Invoice – Tameen Al Theqa</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body{
+    width: 100%;
+    min-height: 100%;
+}
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: #e8e8e8;
+    color: #111;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+}
+
+.toolbar {
+    max-width: 1000px;
+    margin: 16px auto 0;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+    padding: 0 12px;
+}
+
+.toolbar button {
+    border: 0;
+    border-radius: 8px;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: .3px;
+    transition: opacity .15s;
+}
+.toolbar button:hover { opacity: .9; }
+.btn-print  { background: #d91414; color: #fff; }
+.btn-back   { background: #333;    color: #fff; }
+
+.stage {
+    width: min(100vw, 1000px);
+    margin: 12px auto 40px;
+}
+
+.invoice-page {
+    position: relative;
+    width: 100%;
+    background: #fff;
+    box-shadow: 0 12px 48px rgba(0,0,0,.18);
+    overflow: hidden;
+}
+
+.template {
+    display: block;
+    width: 100%;
+    height: auto;
+    pointer-events: none;
+    user-select: none;
+}
+
+.overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+}
+
+/* field base */
+.field {
+    position: absolute;
+    color: #111;
+    font-size: clamp(9px, 1.3vw, 14px);
+    line-height: 1.15;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+.field.semibold { font-weight: 600; }
+.field.red { color: #d21414; font-weight: 800; }
+
+/* top row */
+#invoice_number   { top: 27.1%; left: 12.9%; width: 18%; }
+#invoice_date     { top: 27.1%; left: 35.2%; width: 13.5%; }
+#ref_number       { top: 27.1%; left: 58.5%; width: 18%; }
+#verification_id  { top: 27.1%; left: 82.4%; width: 15%; }
+
+/* insured */
+#insured_name     { top: 36.7%; left: 12.0%; width: 38%; }
+#insured_country  { top: 39.1%; left: 12.0%; width: 38%; }
+#insured_city     { top: 41.5%; left: 12.0%; width: 38%; }
+
+/* vehicle values */
+#year_of_mfr          { top: 54.7%; left: 33.4%; width: 22%; }
+#engine_no            { top: 57.5%; left: 33.4%; width: 22%; }
+#chassis_no           { top: 60.3%; left: 33.4%; width: 22%; }
+#type_of_body         { top: 63.1%; left: 33.4%; width: 22%; }
+#make_model           { top: 65.9%; left: 33.4%; width: 22%; }
+#vehicle_permit       { top: 68.7%; left: 33.4%; width: 22%; }
+#seating_capacity     { top: 71.5%; left: 33.4%; width: 22%; }
+#vehicle_plate_no     { top: 74.3%; left: 33.4%; width: 22%; }
+#vehicle_color        { top: 77.1%; left: 33.4%; width: 22%; }
+#insured_vehicle_value{ top: 79.9%; left: 33.4%; width: 22%; }
+
+/* insurance */
+#insurance_company { top: 57.6%; left: 61.6%; width: 24%; }
+#insurance_from    { top: 60.8%; left: 76.6%; width: 14%; }
+#insurance_till    { top: 63.4%; left: 76.6%; width: 14%; }
+
+/* total amount */
+#total_amount {
+    top: 81.8%;
+    left: 72.5%;
+    width: 20.5%;
+    font-size: clamp(24px, 4vw, 44px);
+    font-weight: 900;
+    color: #d21414;
+    text-align: right;
+    letter-spacing: .5px;
+}
+
+/* qr */
+#qr_wrap {
+    position: absolute;
+    left: 82.2%;
+    top: 86.2%;
+    width: 10.0%;
+    aspect-ratio: 1 / 1;
+    z-index: 3;
+    background: #fff;
+}
+#qr_wrap img,
+#qr_wrap canvas {
+    width: 100% !important;
+    height: 100% !important;
+    display: block;
+}
+
+/* loading + not found */
+.loading-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,.7);
+    z-index: 10;
+    font-size: 18px;
+    font-weight: 700;
+    color: #d91414;
+}
+.not-found {
+    max-width: 1000px;
+    margin: 40px auto;
+    padding: 20px;
+    background: #fff3f3;
+    border: 1px solid #f0b4b4;
+    border-radius: 12px;
+    color: #8a1717;
+    font-weight: 700;
+    font-size: 16px;
+    display: none;
+    text-align: center;
+}
+
+@media (max-width: 1024px){
+    .field {
+        font-size: clamp(8px, 1.6vw, 13px);
+    }
+}
+
+@media print {
+    body { background: #fff; }
+    .toolbar, .not-found { display: none !important; }
+    .stage {
+        width: 100%;
+        margin: 0;
+    }
+    .invoice-page {
+        box-shadow: none;
+        page-break-after: always;
+    }
+    @page {
+        size: A4 portrait;
+        margin: 0;
+    }
+}
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+    <button class="btn-back" onclick="window.history.back()">← Back</button>
+    <button class="btn-print" onclick="window.print()">🖨 Print / Save PDF</button>
+</div>
+
+<div class="stage">
+    <div class="invoice-page" id="invoicePage">
+        <img class="template" src="invoice-template.png" alt="Invoice Template">
+
+        <div class="overlay">
+            <div id="invoice_number" class="field"></div>
+            <div id="invoice_date" class="field semibold"></div>
+            <div id="ref_number" class="field semibold"></div>
+            <div id="verification_id" class="field semibold red"></div>
+
+            <div id="insured_name" class="field semibold"></div>
+            <div id="insured_country" class="field semibold"></div>
+            <div id="insured_city" class="field semibold"></div>
+
+            <div id="year_of_mfr" class="field semibold"></div>
+            <div id="engine_no" class="field semibold"></div>
+            <div id="chassis_no" class="field semibold"></div>
+            <div id="type_of_body" class="field semibold"></div>
+            <div id="make_model" class="field semibold"></div>
+            <div id="vehicle_permit" class="field semibold"></div>
+            <div id="seating_capacity" class="field semibold"></div>
+            <div id="vehicle_plate_no" class="field semibold"></div>
+            <div id="vehicle_color" class="field semibold"></div>
+            <div id="insured_vehicle_value" class="field semibold"></div>
+
+            <div id="insurance_company" class="field semibold"></div>
+            <div id="insurance_from" class="field semibold"></div>
+            <div id="insurance_till" class="field semibold"></div>
+
+            <div id="total_amount" class="field"></div>
+
+            <div id="qr_wrap"></div>
+        </div>
+
+        <div class="loading-overlay" id="loadingOverlay">Loading invoice…</div>
+    </div>
+</div>
+
+<div id="message" class="not-found"></div>
+
+<script>
+const supabaseClient = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY
+);
+
+const params = new URLSearchParams(window.location.search);
+const verificationId = params.get("id");
+
+function setText(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value ?? "";
+}
+
+function formatDate(value) {
+    if (!value) return "";
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return value;
+    return new Intl.DateTimeFormat("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric"
+    }).format(d);
+}
+
+function showError(msg) {
+    document.getElementById("loadingOverlay").style.display = "none";
+    const el = document.getElementById("message");
+    el.style.display = "block";
+    el.textContent = msg;
+}
+
+function generateQR(verifyId) {
+    const wrap = document.getElementById("qr_wrap");
+    wrap.innerHTML = "";
+
+    const verifyUrl = window.location.origin +
+        window.location.pathname.replace("invoice.html", "verify.html") +
+        "?id=" + encodeURIComponent(verifyId);
+
+    new QRCode(wrap, {
+        text: verifyUrl,
+        width: 200,
+        height: 200,
+        colorDark: "#000000",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.M
+    });
+}
+
+async function loadInvoice() {
+    if (!verificationId) {
+        showError("Missing verification ID in URL.");
+        return;
+    }
+
+    const { data, error } = await supabaseClient
+        .from("invoices")
+        .select("*")
+        .eq("verification_id", verificationId)
+        .maybeSingle();
+
+    if (error || !data) {
+        showError("Invoice not found. Please check the verification ID.");
+        return;
+    }
+
+    setText("invoice_number",  data.invoice_number);
+    setText("invoice_date",    formatDate(data.invoice_date));
+    setText("ref_number",      data.ref_number);
+    setText("verification_id", data.verification_id);
+
+    setText("insured_name",    data.insured_name);
+    setText("insured_country", data.insured_country);
+    setText("insured_city",    data.insured_city);
+
+    setText("year_of_mfr",           data.year_of_mfr);
+    setText("engine_no",             data.engine_no);
+    setText("chassis_no",            data.chassis_no);
+    setText("type_of_body",          data.type_of_body);
+    setText("make_model",            data.make_model);
+    setText("vehicle_permit",        data.vehicle_permit);
+    setText("seating_capacity",      data.seating_capacity);
+    setText("vehicle_plate_no",      data.vehicle_plate_no);
+    setText("vehicle_color",         data.vehicle_color);
+    setText("insured_vehicle_value", data.insured_vehicle_value);
+
+    setText("insurance_company", data.insurance_company);
+    setText("insurance_from",    formatDate(data.insurance_from));
+    setText("insurance_till",    formatDate(data.insurance_till));
+
+    setText("total_amount", data.total_amount ? `${data.total_amount} AED` : "");
+
+    generateQR(data.verification_id);
+    document.getElementById("loadingOverlay").style.display = "none";
+}
+
+loadInvoice();
+</script>
+
+</body>
+</html>
