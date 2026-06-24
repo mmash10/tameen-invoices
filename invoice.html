@@ -291,16 +291,30 @@ body {
 }
 
 @media print {
-    body { background: #fff; }
-    .toolbar, .not-found { display: none !important; }
+    body {
+        background: #fff;
+        margin: 0;
+        padding: 0;
+    }
+
+    .toolbar,
+    .not-found {
+        display: none !important;
+    }
+
     .stage {
         width: 100%;
         margin: 0;
     }
+
     .invoice-page {
         box-shadow: none;
-        page-break-after: always;
+        page-break-after: auto;
+        break-after: auto;
+        page-break-inside: avoid;
+        break-inside: avoid;
     }
+
     @page {
         size: A4 portrait;
         margin: 0;
