@@ -31,6 +31,30 @@ button{
 </style>
 
 </head>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase.js"></script>
+
+<script>
+
+const supabaseClient = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY
+);
+
+function generateInvoiceNumber(){
+    return "INV-" + Date.now();
+}
+
+function generateRefNumber(){
+    return "REF-" + Date.now();
+}
+
+function generateVerificationId(){
+    return "TAT-" +
+    Math.random().toString(36).substring(2,10).toUpperCase();
+}
+
+</script>
 <body>
 
 <h1>Tameen Invoice Generator</h1>
@@ -63,9 +87,60 @@ button{
 
 <br><br>
 
-<button>
+<button onclick="saveInvoice()">
 Generate Invoice
 </button>
+
+    <script>
+
+async function saveInvoice(){
+
+    const invoiceNumber =
+        generateInvoiceNumber();
+
+    const refNumber =
+        generateRefNumber();
+
+    const verificationId =
+        generateVerificationId();
+
+    const { error } =
+    await supabaseClient
+    .from("invoices")
+    .insert([{
+
+        invoice_number: invoiceNumber,
+        verification_id: verificationId,
+        ref_number: refNumber,
+
+        invoice_date: new Date(),
+
+        insured_name:
+        document.getElementById("insured_name").value,
+
+        insured_country:
+        document.getElementById("insured_country").value,
+
+        insured_city:
+        document.getElementById("insured_city").value,
+
+        total_amount:
+        document.getElementById("total_amount").value
+
+    }]);
+
+    if(error){
+        alert(error.message);
+        return;
+    }
+
+    alert(
+        "Invoice Saved Successfully\n\n" +
+        invoiceNumber
+    );
+}
+
+</script>
 
 </body>
 </html>
