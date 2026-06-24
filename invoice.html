@@ -229,8 +229,15 @@ body {
 /* qr */
 
 #qr_wrap {
+    position: absolute;
     left: 81.93%;
     top: 84.64%;
+
+    width: 8%;
+    height: 5.5%;
+
+    z-index: 3;
+    overflow: hidden;
 }
 #qr_wrap img,
 #qr_wrap canvas {
@@ -379,8 +386,8 @@ function generateQR(verifyId) {
 
     new QRCode(wrap, {
         text: verifyUrl,
-        width: 200,
-        height: 200,
+        width: 80,
+        height: 80,
         colorDark: "#000000",
         colorLight: "#ffffff",
         correctLevel: QRCode.CorrectLevel.M
