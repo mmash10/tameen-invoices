@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Invoice</title>
+
+<style>
+body{
+    font-family: Arial, sans-serif;
+    background:#f5f5f5;
+    padding:30px;
+}
+
+.invoice{
+    background:white;
+    max-width:1000px;
+    margin:auto;
+    padding:40px;
+    border:1px solid #ddd;
+}
+
+.header{
+    display:flex;
+    justify-content:space-between;
+    margin-bottom:30px;
+}
+
+.section{
+    margin-top:25px;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+td{
+    border:1px solid #ccc;
+    padding:10px;
+}
+
+.title{
+    text-align:center;
+    font-size:28px;
+    font-weight:bold;
+}
+</style>
+</head>
+
+<body>
+
+<div class="invoice">
+
+<div class="header">
+    <div>
+        <h2>Tameen Insurance</h2>
+    </div>
+
+    <div>
+        <b>Invoice Number:</b>
+        <span id="invoice_number"></span>
+        <br>
+
+        <b>Verification ID:</b>
+        <span id="verification_id"></span>
+    </div>
+</div>
+
+<div class="title">
+    Motor Insurance Certificate
+</div>
+
+<div class="section">
+<h3>Insured Details</h3>
+
+<table>
+<tr>
+<td>Name</td>
+<td id="insured_name"></td>
+</tr>
+
+<tr>
+<td>Country</td>
+<td id="insured_country"></td>
+</tr>
+
+<tr>
+<td>City</td>
+<td id="insured_city"></td>
+</tr>
+</table>
+</div>
+
+<div class="section">
+<h3>Vehicle Details</h3>
+
+<table>
+<tr>
+<td>Make & Model</td>
+<td id="make_model"></td>
+</tr>
+
+<tr>
+<td>Engine No</td>
+<td id="engine_no"></td>
+</tr>
+
+<tr>
+<td>Chassis No</td>
+<td id="chassis_no"></td>
+</tr>
+
+<tr>
+<td>Vehicle Color</td>
+<td id="vehicle_color"></td>
+</tr>
+</table>
+</div>
+
+<div class="section">
+<h3>Insurance Details</h3>
+
+<table>
+<tr>
+<td>Insurance Company</td>
+<td id="insurance_company"></td>
+</tr>
+
+<tr>
+<td>From</td>
+<td id="insurance_from"></td>
+</tr>
+
+<tr>
+<td>Till</td>
+<td id="insurance_till"></td>
+</tr>
+
+<tr>
+<td>Total Amount</td>
+<td id="total_amount"></td>
+</tr>
+</table>
+</div>
+
+</div>
+
+</body>
+</html>
