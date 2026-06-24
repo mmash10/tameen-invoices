@@ -207,23 +207,29 @@ body {
 }
 
 #insurance_from {
-    top: 57.10%;
-    left: 80.86%;
+    top: 57.16%;
+    left: 83.59%;
     width: 15%;
 }
 
 #insurance_till {
-    top: 58.98%;
-    left: 79.30%;
+    top: 59.11%;
+    left: 83.59%;
     width: 15%;
 }
 
 /* total amount */
 
 #total_amount {
-    top: 70.05%;
-    left: 59.28%;
+    top: 69.73%;
+    left: 63.48%;
     width: 30%;
+
+    font-size: clamp(50px, 8vw, 110px);
+    font-weight: 900;
+    color: #d21414;
+    text-align: right;
+    letter-spacing: .5px;
 }
 
 /* qr */
@@ -386,8 +392,8 @@ function generateQR(verifyId) {
 
     new QRCode(wrap, {
         text: verifyUrl,
-        width: 80,
-        height: 80,
+        width: 100,
+        height: 100,
         colorDark: "#000000",
         colorLight: "#ffffff",
         correctLevel: QRCode.CorrectLevel.M
