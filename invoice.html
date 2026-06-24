@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
 <meta charset="UTF-8">
 <title>Invoice</title>
@@ -45,8 +46,77 @@ td{
     font-weight:bold;
 }
 </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase.js"></script>
 </head>
+<script>
 
+const supabaseClient = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY
+);
+
+const params = new URLSearchParams(window.location.search);
+
+const verificationId = params.get("id");
+
+loadInvoice();
+
+async function loadInvoice(){
+
+    const { data, error } =
+    await supabaseClient
+    .from("invoices")
+    .select("*")
+    .eq("verification_id", verificationId)
+    .single();
+
+    if(error){
+        alert("Invoice Not Found");
+        return;
+    }
+
+    document.getElementById("invoice_number").innerText =
+        data.invoice_number;
+
+    document.getElementById("verification_id").innerText =
+        data.verification_id;
+
+    document.getElementById("insured_name").innerText =
+        data.insured_name;
+
+    document.getElementById("insured_country").innerText =
+        data.insured_country;
+
+    document.getElementById("insured_city").innerText =
+        data.insured_city;
+
+    document.getElementById("make_model").innerText =
+        data.make_model;
+
+    document.getElementById("engine_no").innerText =
+        data.engine_no;
+
+    document.getElementById("chassis_no").innerText =
+        data.chassis_no;
+
+    document.getElementById("vehicle_color").innerText =
+        data.vehicle_color;
+
+    document.getElementById("insurance_company").innerText =
+        data.insurance_company;
+
+    document.getElementById("insurance_from").innerText =
+        data.insurance_from;
+
+    document.getElementById("insurance_till").innerText =
+        data.insurance_till;
+
+    document.getElementById("total_amount").innerText =
+        data.total_amount;
+}
+
+</script>
 <body>
 
 <div class="invoice">
