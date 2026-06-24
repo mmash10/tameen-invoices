@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Verify Invoice – Tameen Al Theqa</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase.js"></script>
+
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: #f0f0f0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 40px 16px;
+}
+
+.logo-bar {
+    text-align: center;
+    margin-bottom: 32px;
+}
+.logo-bar h1 {
+    font-size: 22px;
+    font-weight: 900;
+    color: #d91414;
+    letter-spacing: .5px;
+}
+.logo-bar p { font-size: 13px; color: #666; margin-top: 4px; }
+
+.card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0,0,0,.1);
+    padding: 32px 28px;
+    width: 100%;
+    max-width: 480px;
+}
+
+.card h2 {
+    font-size: 18px;
+    font-weight: 800;
+    color: #111;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.input-row {
+    display: flex;
+    gap: 8px;
+}
+.input-row input {
+    flex: 1;
+    padding: 12px 14px;
+    border: 1.5px solid #ddd;
+    border-radius: 10px;
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color .2s;
+}
+.input-row input:focus { border-color: #d91414; }
+
+.btn-verify {
+    background: #d91414;
+    color: #fff;
+    border: 0;
+    border-radius: 10px;
+    padding: 12px 20px;
+    font-size: 14px;
+    font-weight: 800;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity .15s;
+}
+.btn-verify:hover    { opacity: .88; }
+.btn-verify:disabled { opacity: .55; cursor: not-allowed; }
+
+/* Auto-load from URL param */
+.hint { font-size: 12px; color: #999; margin-top: 8px; }
+
+/* Result card */
+#result {
+    margin-top: 24px;
+    display: none;
+}
+
+.result-valid {
+    background: #f0fff4;
+    border: 1.5px solid #86efac;
+    border-radius: 12px;
+    padding: 20px;
+}
+.result-invalid {
+    background: #fff3f3;
+    border: 1.5px solid #fca5a5;
+    border-radius: 12px;
+    padding: 20px;
+    color: #b91c1c;
+    font-weight: 700;
+    text-align: center;
+}
+
+.result-valid .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #22c55e;
+    color: #fff;
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin-bottom: 14px;
+}
+
+.result-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid #dcfce7;
+    font-size: 14px;
+}
+.result-row:last-child { border-bottom: 0; }
+.result-row .label { color: #555; font-weight: 600; flex-shrink: 0; }
+.result-row .value { font-weight: 700; text-align: right; word-break: break-all; }
+
+.btn-view {
+    display: block;
+    width: 100%;
+    margin-top: 16px;
+    background: #d91414;
+    color: #fff;
+    border: 0;
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 14px;
+    font-weight: 800;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+    transition: opacity .15s;
+}
+.btn-view:hover { opacity: .88; }
+</style>
+</head>
+<body>
+
+<div class="logo-bar">
+    <h1>🛡 Tameen Al Theqa</h1>
+    <p>Invoice Verification Portal</p>
+</div>
+
+<div class="card">
+    <h2>🔍 Verify Invoice</h2>
+
+    <div class="input-row">
+        <input id="verification_id" placeholder="Enter Verification ID (e.g. TAT-XXXXXXXX)"
+               onkeydown="if(event.key==='Enter') verifyInvoice()">
+        <button class="btn-verify" id="btnVerify" onclick="verifyInvoice()">Verify</button>
+    </div>
+    <p class="hint">The Verification ID is printed on your invoice in red.</p>
+
+    <div id="result"></div>
+</div>
+
+<script>
+const supabaseClient = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY
+);
+
+/* Auto-populate from URL ?id= */
+const params = new URLSearchParams(window.location.search);
+const urlId  = params.get("id");
+if (urlId) {
+    document.getElementById("verification_id").value = urlId;
+    // auto-verify after page loads
+    window.addEventListener("load", () => verifyInvoice());
+}
+
+function formatDate(value) {
+    if (!value) return "—";
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return value;
+    return new Intl.DateTimeFormat("en-GB", {
+        day: "2-digit", month: "short", year: "numeric"
+    }).format(d);
+}
+
+async function verifyInvoice() {
+    const id = document.getElementById("verification_id").value.trim();
+    if (!id) return;
+
+    const btn = document.getElementById("btnVerify");
+    btn.disabled    = true;
+    btn.textContent = "…";
+
+    const { data, error } = await supabaseClient
+        .from("invoices")
+        .select("*")
+        .eq("verification_id", id)
+        .maybeSingle();
+
+    btn.disabled    = false;
+    btn.textContent = "Verify";
+
+    const result = document.getElementById("result");
+    result.style.display = "block";
+
+    if (error || !data) {
+        result.innerHTML = `<div class="result-invalid">❌ Invoice not found. This ID is invalid or does not exist.</div>`;
+        return;
+    }
+
+    result.innerHTML = `
+        <div class="result-valid">
+            <div class="badge">✓ Verified</div>
+
+            <div class="result-row">
+                <span class="label">Invoice No.</span>
+                <span class="value">${data.invoice_number ?? "—"}</span>
+            </div>
+            <div class="result-row">
+                <span class="label">Verification ID</span>
+                <span class="value" style="color:#d91414">${data.verification_id}</span>
+            </div>
+            <div class="result-row">
+                <span class="label">Date</span>
+                <span class="value">${formatDate(data.invoice_date)}</span>
+            </div>
+            <div class="result-row">
+                <span class="label">Insured Name</span>
+                <span class="value">${data.insured_name ?? "—"}</span>
+            </div>
+            <div class="result-row">
+                <span class="label">Insurance Co.</span>
+                <span class="value">${data.insurance_company ?? "—"}</span>
+            </div>
+            <div class="result-row">
+                <span class="label">Period</span>
+                <span class="value">${formatDate(data.insurance_from)} → ${formatDate(data.insurance_till)}</span>
+            </div>
+            <div class="result-row">
+                <span class="label">Total Amount</span>
+                <span class="value" style="color:#d91414;font-size:16px">${data.total_amount ?? "—"} AED</span>
+            </div>
+
+            <a class="btn-view" href="invoice.html?id=${encodeURIComponent(data.verification_id)}">
+                View Full Invoice →
+            </a>
+        </div>
+    `;
+}
+</script>
+
+</body>
+</html>

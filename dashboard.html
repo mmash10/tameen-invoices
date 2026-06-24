@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Create Invoice – Tameen Al Theqa</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase.js"></script>
+
+<style>
+/* ─── Base ─────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: #f0f0f0;
+    color: #111;
+    padding-bottom: 60px;
+}
+
+/* ─── Header bar ────────────────────────────────────── */
+.header {
+    background: #d91414;
+    color: #fff;
+    padding: 18px 24px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.2);
+}
+.header h1 {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: .4px;
+}
+.header span {
+    font-size: 22px;
+}
+
+/* ─── Card wrapper ──────────────────────────────────── */
+.card {
+    max-width: 780px;
+    margin: 30px auto;
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 4px 24px rgba(0,0,0,.08);
+    overflow: hidden;
+}
+
+/* ─── Section headers ───────────────────────────────── */
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #f7f7f7;
+    border-bottom: 2px solid #e8e8e8;
+    padding: 14px 24px;
+    font-size: 14px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    color: #333;
+}
+.section-title .dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: #d91414;
+    flex-shrink: 0;
+}
+
+/* ─── Field grid ────────────────────────────────────── */
+.field-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    padding: 20px 24px;
+}
+.field-grid.single { grid-template-columns: 1fr; }
+.field-grid.triple { grid-template-columns: 1fr 1fr 1fr; }
+
+/* ─── Input ─────────────────────────────────────────── */
+.field-group label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .6px;
+    color: #666;
+    margin-bottom: 5px;
+}
+.field-group input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1.5px solid #ddd;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    transition: border-color .2s;
+    outline: none;
+    background: #fafafa;
+}
+.field-group input:focus {
+    border-color: #d91414;
+    background: #fff;
+}
+
+/* ─── Submit area ───────────────────────────────────── */
+.submit-area {
+    padding: 20px 24px 28px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    border-top: 1px solid #eee;
+}
+
+.btn-generate {
+    background: #d91414;
+    color: #fff;
+    border: 0;
+    border-radius: 10px;
+    padding: 13px 32px;
+    font-size: 15px;
+    font-weight: 800;
+    cursor: pointer;
+    letter-spacing: .4px;
+    transition: opacity .15s, transform .1s;
+}
+.btn-generate:hover  { opacity: .88; }
+.btn-generate:active { transform: scale(.97); }
+.btn-generate:disabled { opacity: .55; cursor: not-allowed; }
+
+.btn-clear {
+    background: #eee;
+    color: #333;
+    border: 0;
+    border-radius: 10px;
+    padding: 13px 24px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background .15s;
+}
+.btn-clear:hover { background: #ddd; }
+
+/* ─── Toast ─────────────────────────────────────────── */
+#toast {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: #222;
+    color: #fff;
+    padding: 12px 28px;
+    border-radius: 30px;
+    font-size: 14px;
+    font-weight: 700;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .3s, transform .3s;
+    z-index: 99;
+    white-space: nowrap;
+}
+#toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+#toast.error { background: #b91c1c; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+    <span>🧾</span>
+    <h1>Tameen Al Theqa — Invoice Generator</h1>
+</div>
+
+<div class="card">
+
+    <!-- ── Insured Details ────────────────────── -->
+    <div class="section-title"><div class="dot"></div> Insured Details</div>
+    <div class="field-grid">
+        <div class="field-group">
+            <label>Full Name</label>
+            <input id="insured_name" placeholder="e.g. DAR AL AMAN MEDICAL CENTRE LLC">
+        </div>
+        <div class="field-group">
+            <label>Country</label>
+            <input id="insured_country" placeholder="e.g. United Arab Emirates">
+        </div>
+        <div class="field-group">
+            <label>City</label>
+            <input id="insured_city" placeholder="e.g. Sharjah">
+        </div>
+    </div>
+
+    <!-- ── Vehicle Details ───────────────────── -->
+    <div class="section-title"><div class="dot"></div> Vehicle Details</div>
+    <div class="field-grid">
+        <div class="field-group">
+            <label>Year of MFR</label>
+            <input id="year_of_mfr" placeholder="e.g. 2014">
+        </div>
+        <div class="field-group">
+            <label>Make & Model</label>
+            <input id="make_model" placeholder="e.g. TOYOTA - YARIS">
+        </div>
+        <div class="field-group">
+            <label>Engine No</label>
+            <input id="engine_no" placeholder="e.g. 1NZY926445">
+        </div>
+        <div class="field-group">
+            <label>Chassis No</label>
+            <input id="chassis_no" placeholder="e.g. MR2BT9F32E1076030">
+        </div>
+        <div class="field-group">
+            <label>Type of Body</label>
+            <input id="type_of_body" placeholder="e.g. SEDAN">
+        </div>
+        <div class="field-group">
+            <label>Vehicle Permit</label>
+            <input id="vehicle_permit" placeholder="e.g. 3230024615">
+        </div>
+        <div class="field-group">
+            <label>Seating Capacity (incl. driver)</label>
+            <input id="seating_capacity" placeholder="e.g. 5">
+        </div>
+        <div class="field-group">
+            <label>Vehicle Plate No</label>
+            <input id="vehicle_plate_no" placeholder="e.g. 3/34615">
+        </div>
+        <div class="field-group">
+            <label>Vehicle Color</label>
+            <input id="vehicle_color" placeholder="e.g. White">
+        </div>
+        <div class="field-group">
+            <label>Insured Vehicle Value</label>
+            <input id="insured_vehicle_value" placeholder="e.g. 45000 or —">
+        </div>
+    </div>
+
+    <!-- ── Insurance Details ─────────────────── -->
+    <div class="section-title"><div class="dot"></div> Insurance Details</div>
+    <div class="field-grid triple">
+        <div class="field-group">
+            <label>Insurance Company</label>
+            <input id="insurance_company" placeholder="e.g. METHAQ">
+        </div>
+        <div class="field-group">
+            <label>From</label>
+            <input id="insurance_from" type="date">
+        </div>
+        <div class="field-group">
+            <label>Till</label>
+            <input id="insurance_till" type="date">
+        </div>
+    </div>
+
+    <!-- ── Invoice No & Amount ───────────────── -->
+    <div class="section-title"><div class="dot"></div> Invoice Details</div>
+    <div class="field-grid">
+        <div class="field-group">
+            <label>Invoice Number</label>
+            <input id="invoice_number_input" placeholder="e.g. 064/2023 (leave blank for auto)">
+        </div>
+        <div class="field-group">
+            <label>Total Amount (AED)</label>
+            <input id="total_amount" placeholder="e.g. 620">
+        </div>
+    </div>
+
+    <!-- ── Actions ───────────────────────────── -->
+    <div class="submit-area">
+        <button class="btn-clear" onclick="clearForm()">Clear</button>
+        <button class="btn-generate" id="btnGenerate" onclick="saveInvoice()">
+            Generate Invoice →
+        </button>
+    </div>
+
+</div>
+
+<!-- Toast notification -->
+<div id="toast"></div>
+
+<script>
+const supabaseClient = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY
+);
+
+/* ── ID generators ──────────────────────────── */
+function generateInvoiceNumber() {
+    return "INV-" + Date.now();
+}
+function generateRefNumber() {
+    return "REF-" + Date.now();
+}
+function generateVerificationId() {
+    return "TAT-" +
+        Math.random().toString(36).substring(2, 10).toUpperCase();
+}
+
+/* ── Toast helper ───────────────────────────── */
+function showToast(msg, isError = false) {
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.className   = "show" + (isError ? " error" : "");
+    setTimeout(() => { t.className = ""; }, 3200);
+}
+
+/* ── Clear form ─────────────────────────────── */
+function clearForm() {
+    document.querySelectorAll("input").forEach(i => i.value = "");
+}
+
+/* ── Get value helper ───────────────────────── */
+function val(id) {
+    return document.getElementById(id).value.trim();
+}
+
+/* ── Save invoice ───────────────────────────── */
+async function saveInvoice() {
+    const btn = document.getElementById("btnGenerate");
+    btn.disabled = true;
+    btn.textContent = "Saving…";
+
+    const customInvNo     = val("invoice_number_input");
+    const invoiceNumber   = customInvNo || generateInvoiceNumber();
+    const refNumber       = generateRefNumber();
+    const verificationId  = generateVerificationId();
+
+    const { error } = await supabaseClient
+        .from("invoices")
+        .insert([{
+            invoice_number:   invoiceNumber,
+            verification_id:  verificationId,
+            ref_number:       refNumber,
+            invoice_date:     new Date(),
+
+            insured_name:     val("insured_name"),
+            insured_country:  val("insured_country"),
+            insured_city:     val("insured_city"),
+
+            year_of_mfr:      val("year_of_mfr"),
+            engine_no:        val("engine_no"),
+            chassis_no:       val("chassis_no"),
+            type_of_body:     val("type_of_body"),
+            make_model:       val("make_model"),
+            vehicle_permit:   val("vehicle_permit"),
+            seating_capacity: val("seating_capacity"),
+            vehicle_plate_no: val("vehicle_plate_no"),
+            vehicle_color:    val("vehicle_color"),
+            insured_vehicle_value: val("insured_vehicle_value"),
+
+            insurance_company: val("insurance_company"),
+            insurance_from:    val("insurance_from"),
+            insurance_till:    val("insurance_till"),
+
+            total_amount:      val("total_amount")
+        }]);
+
+    btn.disabled    = false;
+    btn.textContent = "Generate Invoice →";
+
+    if (error) {
+        showToast("❌ " + error.message, true);
+        return;
+    }
+
+    /* ── Redirect to invoice view ── */
+    window.location.href = "invoice.html?id=" + encodeURIComponent(verificationId);
+}
+</script>
+
+</body>
+</html>

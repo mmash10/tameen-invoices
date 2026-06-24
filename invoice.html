@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Invoice – Tameen Al Theqa</title>
+
+<!-- Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase.js"></script>
+
+<!-- QR code generator (client-side, no server needed) -->
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+
+<style>
+/* ─── Reset & base ─────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: #e8e8e8;
+    color: #111;
+}
+
+/* ─── Toolbar ──────────────────────────────────────── */
+.toolbar {
+    max-width: 1000px;
+    margin: 16px auto 0;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+    padding: 0 12px;
+}
+
+.toolbar button {
+    border: 0;
+    border-radius: 8px;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: .3px;
+    transition: opacity .15s;
+}
+.toolbar button:hover { opacity: .85; }
+
+.btn-print  { background: #d91414; color: #fff; }
+.btn-back   { background: #333;    color: #fff; }
+
+/* ─── Stage – constrains the invoice page ──────────── */
+.stage {
+    /* The template image is 2048 × 3072 px  →  ratio = 2 : 3 */
+    width: min(100vw, 1000px);
+    margin: 12px auto 40px;
+}
+
+/* ─── Invoice page – background template ───────────── */
+.invoice-page {
+    position: relative;
+    width: 100%;
+    /* CRITICAL FIX: use 2/3 (= 2048/3072), not 1000/1453 */
+    aspect-ratio: 2 / 3;
+    background-image: url('https://mmash10.github.io/tameen-invoices/invoice-template.png');
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+    overflow: hidden;
+    box-shadow: 0 12px 48px rgba(0,0,0,.18);
+}
+
+/* ─── Field base ────────────────────────────────────── */
+.field {
+    position: absolute;
+    z-index: 2;
+    color: #111;
+    /* Font scales with the page width */
+    font-size: clamp(9px, 1.3vw, 14px);
+    line-height: 1.2;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.field.semibold { font-weight: 600; }
+.field.red      { color: #d21414; font-weight: 800; }
+
+/* ─── Header row  (Invoice No / Date / Ref / VerifID) ─ */
+/* y ≈ 27.0 %  (830 / 3072) */
+#invoice_number   { top: 27.0%; left: 13.3%; max-width: 18%; }
+#invoice_date     { top: 27.0%; left: 35.4%; max-width: 14%; }
+#ref_number       { top: 27.0%; left: 59.1%; max-width: 18%; }
+#verification_id  { top: 27.0%; left: 82.0%; max-width: 16%; }
+
+/* ─── Insured's Details ─────────────────────────────── */
+#insured_name    { top: 36.8%; left: 12.0%; max-width: 35%; }
+#insured_country { top: 39.0%; left: 12.0%; max-width: 35%; }
+#insured_city    { top: 41.1%; left: 12.0%; max-width: 35%; }
+
+/* ─── Vehicle Details (values right-column) ─────────── */
+/* x ≈ 33.4%  (684 / 2048) */
+#year_of_mfr          { top: 54.4%; left: 33.4%; max-width: 20%; }
+#engine_no            { top: 57.2%; left: 33.4%; max-width: 20%; }
+#chassis_no           { top: 59.9%; left: 33.4%; max-width: 20%; }
+#type_of_body         { top: 62.7%; left: 33.4%; max-width: 20%; }
+#make_model           { top: 65.4%; left: 33.4%; max-width: 20%; }
+#vehicle_permit       { top: 68.2%; left: 33.4%; max-width: 20%; }
+#seating_capacity     { top: 70.9%; left: 33.4%; max-width: 20%; }
+#vehicle_plate_no     { top: 73.7%; left: 33.4%; max-width: 20%; }
+#vehicle_color        { top: 76.5%; left: 33.4%; max-width: 20%; }
+#insured_vehicle_value{ top: 79.3%; left: 33.4%; max-width: 20%; }
+
+/* ─── Insurance Details ─────────────────────────────── */
+#insurance_company { top: 56.7%; left: 62.4%; max-width: 25%; }
+#insurance_from    { top: 59.9%; left: 75.6%; max-width: 15%; }
+#insurance_till    { top: 62.7%; left: 75.6%; max-width: 15%; }
+
+/* ─── Total Amount ──────────────────────────────────── */
+#total_amount {
+    top: 74.1%;
+    left: 62.5%;
+    width: 30%;
+    text-align: right;
+    /* Big red number */
+    font-size: clamp(22px, 3.8vw, 42px);
+    font-weight: 900;
+    color: #d21414;
+    letter-spacing: .5px;
+    padding-right: 2%;
+}
+
+/* ─── QR Code ───────────────────────────────────────── */
+/*
+  QR sits in the bottom-right placeholder box.
+  Template box ≈  left:82.6%, top:87.0%, w:10%, h:8%
+  We render a hidden div and copy as <img> so it scales.
+*/
+#qr_wrap {
+    position: absolute;
+    left: 82.6%;
+    top: 86.5%;
+    width: 10%;
+    /* height matches width for square QR */
+    aspect-ratio: 1 / 1;
+    z-index: 3;
+}
+/* qrcodejs renders a table + canvas inside the div */
+#qr_wrap img,
+#qr_wrap canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* ─── Not-found banner ──────────────────────────────── */
+.not-found {
+    max-width: 1000px;
+    margin: 40px auto;
+    padding: 20px;
+    background: #fff3f3;
+    border: 1px solid #f0b4b4;
+    border-radius: 12px;
+    color: #8a1717;
+    font-weight: 700;
+    font-size: 16px;
+    display: none;
+    text-align: center;
+}
+
+/* ─── Loading state ─────────────────────────────────── */
+.loading-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,.7);
+    z-index: 10;
+    font-size: 18px;
+    font-weight: 700;
+    color: #d91414;
+}
+
+/* ─── Print styles ──────────────────────────────────── */
+@media print {
+    body        { background: #fff; }
+    .toolbar,
+    .not-found  { display: none !important; }
+
+    .stage {
+        width: 100%;
+        margin: 0;
+    }
+    .invoice-page {
+        box-shadow: none;
+        page-break-after: always;
+    }
+    @page {
+        size: A4 portrait;
+        margin: 0;
+    }
+}
+</style>
+</head>
+<body>
+
+<!-- ── Toolbar ─────────────────────────────────────── -->
+<div class="toolbar">
+    <button class="btn-back"  onclick="window.history.back()">← Back</button>
+    <button class="btn-print" onclick="window.print()">🖨 Print / Save PDF</button>
+</div>
+
+<!-- ── Invoice page ────────────────────────────────── -->
+<div class="stage">
+    <div class="invoice-page" id="invoicePage">
+
+        <!-- Loading spinner -->
+        <div class="loading-overlay" id="loadingOverlay">Loading invoice…</div>
+
+        <!-- Header row -->
+        <div id="invoice_number"  class="field"></div>
+        <div id="invoice_date"    class="field semibold"></div>
+        <div id="ref_number"      class="field semibold"></div>
+        <div id="verification_id" class="field semibold red"></div>
+
+        <!-- Insured -->
+        <div id="insured_name"    class="field semibold"></div>
+        <div id="insured_country" class="field semibold"></div>
+        <div id="insured_city"    class="field semibold"></div>
+
+        <!-- Vehicle -->
+        <div id="year_of_mfr"           class="field semibold"></div>
+        <div id="engine_no"             class="field semibold"></div>
+        <div id="chassis_no"            class="field semibold"></div>
+        <div id="type_of_body"          class="field semibold"></div>
+        <div id="make_model"            class="field semibold"></div>
+        <div id="vehicle_permit"        class="field semibold"></div>
+        <div id="seating_capacity"      class="field semibold"></div>
+        <div id="vehicle_plate_no"      class="field semibold"></div>
+        <div id="vehicle_color"         class="field semibold"></div>
+        <div id="insured_vehicle_value" class="field semibold"></div>
+
+        <!-- Insurance -->
+        <div id="insurance_company" class="field semibold"></div>
+        <div id="insurance_from"    class="field semibold"></div>
+        <div id="insurance_till"    class="field semibold"></div>
+
+        <!-- Total -->
+        <div id="total_amount" class="field"></div>
+
+        <!-- QR code container -->
+        <div id="qr_wrap"></div>
+
+    </div>
+</div>
+
+<div id="message" class="not-found"></div>
+
+<!-- ── Scripts ─────────────────────────────────────── -->
+<script>
+const supabaseClient = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY
+);
+
+const params         = new URLSearchParams(window.location.search);
+const verificationId = params.get("id");
+
+/* ── Helpers ─────────────────────────────────── */
+function setText(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value ?? "";
+}
+
+function formatDate(value) {
+    if (!value) return "";
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return value;
+    return new Intl.DateTimeFormat("en-GB", {
+        day:   "2-digit",
+        month: "short",
+        year:  "numeric"
+    }).format(d);
+}
+
+function showError(msg) {
+    document.getElementById("loadingOverlay").style.display = "none";
+    const el = document.getElementById("message");
+    el.style.display = "block";
+    el.textContent   = msg;
+}
+
+/* ── QR generation ───────────────────────────── */
+function generateQR(verifyId) {
+    const wrap = document.getElementById("qr_wrap");
+    wrap.innerHTML = "";          // clear any previous
+
+    const verifyUrl =
+        window.location.origin +
+        window.location.pathname.replace("invoice.html", "verify.html") +
+        "?id=" + encodeURIComponent(verifyId);
+
+    new QRCode(wrap, {
+        text:           verifyUrl,
+        width:          200,
+        height:         200,
+        colorDark:      "#000000",
+        colorLight:     "#ffffff",
+        correctLevel:   QRCode.CorrectLevel.M
+    });
+}
+
+/* ── Main loader ─────────────────────────────── */
+async function loadInvoice() {
+    if (!verificationId) {
+        showError("⚠️ Missing verification ID in URL.");
+        return;
+    }
+
+    const { data, error } = await supabaseClient
+        .from("invoices")
+        .select("*")
+        .eq("verification_id", verificationId)
+        .maybeSingle();
+
+    if (error || !data) {
+        showError("❌ Invoice not found. Please check the verification ID.");
+        return;
+    }
+
+    /* Header */
+    setText("invoice_number",  data.invoice_number);
+    setText("invoice_date",    formatDate(data.invoice_date));
+    setText("ref_number",      data.ref_number);
+    setText("verification_id", data.verification_id);
+
+    /* Insured */
+    setText("insured_name",    data.insured_name);
+    setText("insured_country", data.insured_country);
+    setText("insured_city",    data.insured_city);
+
+    /* Vehicle */
+    setText("year_of_mfr",           data.year_of_mfr);
+    setText("engine_no",             data.engine_no);
+    setText("chassis_no",            data.chassis_no);
+    setText("type_of_body",          data.type_of_body);
+    setText("make_model",            data.make_model);
+    setText("vehicle_permit",        data.vehicle_permit);
+    setText("seating_capacity",      data.seating_capacity);
+    setText("vehicle_plate_no",      data.vehicle_plate_no);
+    setText("vehicle_color",         data.vehicle_color);
+    setText("insured_vehicle_value", data.insured_vehicle_value);
+
+    /* Insurance */
+    setText("insurance_company", data.insurance_company);
+    setText("insurance_from",    formatDate(data.insurance_from));
+    setText("insurance_till",    formatDate(data.insurance_till));
+
+    /* Total */
+    const amt = data.total_amount
+        ? data.total_amount + " AED"
+        : "";
+    setText("total_amount", amt);
+
+    /* QR */
+    generateQR(data.verification_id);
+
+    /* Hide loader */
+    document.getElementById("loadingOverlay").style.display = "none";
+}
+
+loadInvoice();
+</script>
+
+</body>
+</html>
