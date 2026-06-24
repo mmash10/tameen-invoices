@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Verify Invoice</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase.js"></script>
+</head>
+<body>
+
+<h1>Verify Invoice</h1>
+
+<input id="verification_id" placeholder="Verification ID">
+<button onclick="verifyInvoice()">Verify</button>
+
+<div id="result"></div>
+
+<script>
+const supabaseClient = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY
+);
+
+async function verifyInvoice() {
+
+    const verificationId =
+        document.getElementById("verification_id").value;
+
+    const { data, error } = await supabaseClient
+        .from("invoices")
+        .select("*")
+        .eq("verification_id", verificationId)
+        .single();
+
+    if(error){
+        document.getElementById("result").innerHTML =
+            "Invoice Not Found";
+        return;
+    }
+
+    document.getElementById("result").innerHTML = `
+        <h3>Invoice Found</h3>
+
+        <p><b>Invoice Number:</b>
+        ${data.invoice_number}</p>
+
+        <p><b>Verification ID:</b>
+        ${data.verification_id}</p>
+
+        <p><b>Name:</b>
+        ${data.insured_name}</p>
+
+        <p><b>Company:</b>
+        ${data.insurance_company}</p>
+
+        <p><b>Total Amount:</b>
+        ${data.total_amount}</p>
+    `;
+}
+</script>
+
+</body>
+</html>
