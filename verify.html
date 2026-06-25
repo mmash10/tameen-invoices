@@ -177,10 +177,7 @@ body {
 </div>
 
 <script>
-const supabaseClient = window.supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_ANON_KEY
-);
+const supabaseClient = window.supabaseClient;
 
 /* Auto-populate from URL ?id= */
 const params = new URLSearchParams(window.location.search);

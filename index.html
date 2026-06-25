@@ -3,77 +3,683 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tameen Invoice System</title>
+<title>Login - Tameen Al Theqa</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase.js"></script>
+<script src="auth.js"></script>
 
 <style>
-body{
-    font-family: Arial, sans-serif;
-    max-width:400px;
-    margin:80px auto;
-    padding:20px;
+:root {
+    --brand-red: #d91414;
+    --brand-red-dark: #a80f0f;
+    --ink: #111111;
+    --muted: #666666;
+    --line: #e6e6e6;
+    --soft: #f5f5f5;
+    --white: #ffffff;
+    --error: #b91c1c;
+    --shadow: 0 28px 80px rgba(0, 0, 0, .12);
 }
 
-input{
-    width:100%;
-    padding:10px;
-    margin-bottom:10px;
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
 
-button{
-    width:100%;
-    padding:10px;
-    cursor:pointer;
+html {
+    min-height: 100%;
 }
 
-#message{
-    margin-top:15px;
+body {
+    min-height: 100vh;
+    font-family: Arial, Helvetica, "Segoe UI", Tahoma, sans-serif;
+    color: var(--ink);
+    background:
+        linear-gradient(135deg, rgba(217, 20, 20, .055), transparent 34%),
+        linear-gradient(315deg, rgba(17, 17, 17, .035), transparent 36%),
+        var(--white);
+}
+
+button,
+input {
+    font: inherit;
+}
+
+.login-shell {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 48px 28px;
+}
+
+.login-frame {
+    width: min(1120px, 100%);
+    min-height: 680px;
+    display: grid;
+    grid-template-columns: minmax(0, 1.08fr) minmax(380px, .92fr);
+    overflow: hidden;
+    border: 1px solid rgba(17, 17, 17, .08);
+    border-radius: 28px;
+    background: rgba(255, 255, 255, .78);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(20px);
+    animation: pageReveal .55s ease both;
+}
+
+.brand-panel {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 54px;
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, .96), rgba(247, 247, 247, .86)),
+        repeating-linear-gradient(90deg, rgba(217, 20, 20, .055) 0 1px, transparent 1px 92px);
+}
+
+.brand-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-inline-start: 8px solid var(--brand-red);
+    pointer-events: none;
+}
+
+.brand-mark {
+    position: relative;
+    width: 260px;
+    max-width: 70%;
+}
+
+.brand-mark img {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+.brand-copy {
+    position: relative;
+    max-width: 540px;
+    animation: copyLift .65s ease .08s both;
+}
+
+.eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    color: var(--brand-red);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 1.8px;
+    text-transform: uppercase;
+}
+
+.eyebrow::before {
+    content: "";
+    width: 34px;
+    height: 2px;
+    background: var(--brand-red);
+}
+
+.brand-copy h1 {
+    max-width: 520px;
+    font-size: clamp(38px, 4.2vw, 58px);
+    line-height: 1.02;
+    font-weight: 900;
+    letter-spacing: 0;
+}
+
+.brand-copy p {
+    max-width: 480px;
+    margin-top: 22px;
+    color: var(--muted);
+    font-size: 17px;
+    line-height: 1.7;
+}
+
+.brand-footnote {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding-top: 34px;
+    color: #333;
+    border-top: 1px solid rgba(17, 17, 17, .1);
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.brand-footnote span:last-child {
+    color: var(--brand-red);
+}
+
+.form-panel {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 54px;
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, .84), rgba(255, 255, 255, .66)),
+        rgba(255, 255, 255, .72);
+}
+
+.login-card {
+    width: 100%;
+    max-width: 430px;
+    padding: 38px;
+    border: 1px solid rgba(255, 255, 255, .75);
+    border-radius: 24px;
+    background: rgba(255, 255, 255, .74);
+    box-shadow: 0 20px 54px rgba(0, 0, 0, .09);
+    backdrop-filter: blur(18px);
+    animation: cardSettle .55s ease .12s both;
+}
+
+.form-heading {
+    margin-bottom: 30px;
+}
+
+.form-heading p {
+    color: var(--brand-red);
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+}
+
+.form-heading h2 {
+    margin-top: 9px;
+    font-size: 30px;
+    line-height: 1.15;
+    font-weight: 900;
+    letter-spacing: 0;
+}
+
+.login-form {
+    display: grid;
+    gap: 18px;
+}
+
+.field-group {
+    display: grid;
+    gap: 8px;
+}
+
+.field-group label {
+    color: #333;
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.input-shell {
+    position: relative;
+}
+
+.input-shell input {
+    width: 100%;
+    min-height: 52px;
+    padding: 0 15px;
+    border: 1.5px solid var(--line);
+    border-radius: 14px;
+    outline: none;
+    color: var(--ink);
+    background: rgba(255, 255, 255, .88);
+    transition: border-color .18s ease, box-shadow .18s ease, background .18s ease;
+}
+
+.input-shell input:focus {
+    border-color: var(--brand-red);
+    background: var(--white);
+    box-shadow: 0 0 0 4px rgba(217, 20, 20, .1);
+}
+
+.input-shell input::placeholder {
+    color: #9a9a9a;
+}
+
+.form-options {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 2px;
+    font-size: 13px;
+}
+
+.remember {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    color: #333;
+    font-weight: 700;
+    cursor: pointer;
+    user-select: none;
+}
+
+.remember input {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--brand-red);
+}
+
+.forgot-link {
+    color: var(--brand-red);
+    font-weight: 800;
+    text-decoration: none;
+    transition: color .18s ease;
+}
+
+.forgot-link:hover,
+.forgot-link:focus-visible {
+    color: var(--brand-red-dark);
+}
+
+.message {
+    display: none;
+    padding: 12px 14px;
+    border-radius: 14px;
+    color: var(--error);
+    background: #fff3f3;
+    border: 1px solid #f2b9b9;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.45;
+}
+
+.message.show {
+    display: block;
+}
+
+.login-button {
+    position: relative;
+    min-height: 54px;
+    margin-top: 4px;
+    border: 0;
+    border-radius: 14px;
+    color: var(--white);
+    background: linear-gradient(135deg, var(--brand-red), var(--brand-red-dark));
+    box-shadow: 0 14px 28px rgba(217, 20, 20, .24);
+    font-size: 15px;
+    font-weight: 900;
+    letter-spacing: .2px;
+    cursor: pointer;
+    transition: transform .16s ease, box-shadow .16s ease, opacity .16s ease;
+}
+
+.login-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 18px 32px rgba(217, 20, 20, .27);
+}
+
+.login-button:active {
+    transform: translateY(0);
+}
+
+.login-button:disabled {
+    cursor: wait;
+    opacity: .76;
+    transform: none;
+}
+
+.button-label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.spinner {
+    display: none;
+    width: 17px;
+    height: 17px;
+    border: 2px solid rgba(255, 255, 255, .42);
+    border-top-color: var(--white);
+    border-radius: 999px;
+    animation: spin .7s linear infinite;
+}
+
+.login-button.loading .spinner {
+    display: inline-block;
+}
+
+.secure-note {
+    margin-top: 22px;
+    color: #777;
+    font-size: 12px;
+    line-height: 1.6;
+    text-align: center;
+}
+
+@keyframes pageReveal {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes copyLift {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes cardSettle {
+    from {
+        opacity: 0;
+        transform: translateY(14px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: .01ms !important;
+    }
+}
+
+@media (max-width: 980px) {
+    .login-shell {
+        padding: 28px 18px;
+    }
+
+    .login-frame {
+        min-height: 0;
+        grid-template-columns: 1fr;
+        border-radius: 24px;
+    }
+
+    .brand-panel {
+        min-height: 390px;
+        padding: 38px;
+    }
+
+    .brand-copy h1 {
+        max-width: 680px;
+    }
+
+    .brand-copy p {
+        max-width: 620px;
+    }
+
+    .form-panel {
+        padding: 38px;
+    }
+}
+
+@media (max-width: 620px) {
+    .login-shell {
+        display: block;
+        padding: 16px;
+    }
+
+    .login-frame {
+        border-radius: 20px;
+    }
+
+    .brand-panel,
+    .form-panel {
+        padding: 26px;
+    }
+
+    .brand-panel {
+        min-height: 330px;
+    }
+
+    .brand-mark {
+        width: 205px;
+        max-width: 78%;
+    }
+
+    .brand-copy h1 {
+        font-size: 32px;
+    }
+
+    .brand-copy p {
+        margin-top: 16px;
+        font-size: 15px;
+    }
+
+    .brand-footnote {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 8px;
+        padding-top: 24px;
+    }
+
+    .login-card {
+        padding: 26px;
+        border-radius: 20px;
+    }
+
+    .form-heading h2 {
+        font-size: 26px;
+    }
+
+    .form-options {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 12px;
+    }
 }
 </style>
 </head>
 <body>
 
-<h2>Tameen Invoice Login</h2>
+<main class="login-shell">
+    <section class="login-frame" aria-label="Tameen Al Theqa secure login">
+        <div class="brand-panel">
+            <a class="brand-mark" href="index.html" aria-label="Tameen Al Theqa">
+                <img src="Logo.png" alt="Tameen Al Theqa">
+            </a>
 
-<input type="email" id="email" placeholder="Email">
-<input type="password" id="password" placeholder="Password">
+            <div class="brand-copy">
+                <p class="eyebrow">Secure Insurance Portal</p>
+                <h1>Trusted access for policy and invoice management.</h1>
+                <p>
+                    Sign in to manage Tameen Al Theqa invoices through a protected,
+                    professional workspace built for accuracy and confidence.
+                </p>
+            </div>
 
-<button onclick="login()">Login</button>
+            <div class="brand-footnote">
+                <span>Insurance documentation system</span>
+                <span>Confidential access</span>
+            </div>
+        </div>
 
-<p id="message"></p>
+        <div class="form-panel">
+            <div class="login-card">
+                <div class="form-heading">
+                    <p>Welcome Back</p>
+                    <h2>Sign in to continue</h2>
+                </div>
+
+                <form class="login-form" id="loginForm" novalidate>
+                    <div class="field-group">
+                        <label for="email">Email address</label>
+                        <div class="input-shell">
+                            <input
+                                id="email"
+                                name="email"
+                                type="email"
+                                inputmode="email"
+                                autocomplete="email"
+                                placeholder="name@company.com"
+                                dir="auto"
+                                required>
+                        </div>
+                    </div>
+
+                    <div class="field-group">
+                        <label for="password">Password</label>
+                        <div class="input-shell">
+                            <input
+                                id="password"
+                                name="password"
+                                type="password"
+                                autocomplete="current-password"
+                                placeholder="Enter your password"
+                                dir="auto"
+                                required>
+                        </div>
+                    </div>
+
+                    <div class="form-options">
+                        <label class="remember" for="rememberMe">
+                            <input id="rememberMe" name="rememberMe" type="checkbox">
+                            <span>Remember me</span>
+                        </label>
+                        <a class="forgot-link" href="#" aria-label="Forgot password">Forgot Password?</a>
+                    </div>
+
+                    <p class="message" id="message" role="alert"></p>
+
+                    <button class="login-button" id="loginButton" type="submit">
+                        <span class="button-label">
+                            <span class="spinner" aria-hidden="true"></span>
+                            <span id="buttonText">Sign In</span>
+                        </span>
+                    </button>
+                </form>
+
+                <p class="secure-note">
+                    Access is restricted to authorized Tameen Al Theqa users.
+                </p>
+            </div>
+        </div>
+    </section>
+</main>
 
 <script>
-const supabaseClient = window.supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_ANON_KEY
-);
+const REMEMBER_EMAIL_KEY = "tameenRememberedEmail";
+const supabaseClient = window.supabaseClient;
 
-async function login(){
+const loginForm = document.getElementById("loginForm");
+const emailInput = document.getElementById("email");
+const passwordInput = document.getElementById("password");
+const rememberInput = document.getElementById("rememberMe");
+const messageEl = document.getElementById("message");
+const loginButton = document.getElementById("loginButton");
+const buttonText = document.getElementById("buttonText");
 
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
+const rememberedEmail = localStorage.getItem(REMEMBER_EMAIL_KEY);
+if (rememberedEmail) {
+    emailInput.value = rememberedEmail;
+    rememberInput.checked = true;
+}
 
-    const { data, error } =
-    await supabaseClient.auth.signInWithPassword({
+checkExistingSession();
+
+loginForm.addEventListener("submit", handleLogin);
+
+async function checkExistingSession() {
+    const session = await window.auth.getSession();
+    if (session) {
+        window.location.href = "home.html";
+    }
+}
+
+async function handleLogin(event) {
+    event.preventDefault();
+    clearMessage();
+
+    const email = emailInput.value.trim();
+    const password = passwordInput.value;
+    const validationMessage = validateCredentials(email, password);
+
+    if (validationMessage) {
+        showMessage(validationMessage);
+        return;
+    }
+
+    setLoading(true);
+    window.auth.setSessionPersistence(rememberInput.checked);
+
+    const { error } = await supabaseClient.auth.signInWithPassword({
         email,
         password
     });
 
-    if(error){
-        document.getElementById("message").innerText =
-        error.message;
+    if (error) {
+        setLoading(false);
+        showMessage("We could not sign you in. Please check your email and password.");
         return;
     }
 
-    document.getElementById("message").innerText =
-    "Login Successful";
+    updateRememberedEmail(email);
+    window.location.href = "home.html";
+}
 
-    localStorage.setItem(
-        "loggedIn",
-        "true"
-    );
+function validateCredentials(email, password) {
+    if (!email) {
+        return "Please enter your email address.";
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return "Please enter a valid email address.";
+    }
+
+    if (!password) {
+        return "Please enter your password.";
+    }
+
+    if (password.length < 6) {
+        return "Password must be at least 6 characters.";
+    }
+
+    return "";
+}
+
+function updateRememberedEmail(email) {
+    if (rememberInput.checked) {
+        localStorage.setItem(REMEMBER_EMAIL_KEY, email);
+        return;
+    }
+
+    localStorage.removeItem(REMEMBER_EMAIL_KEY);
+}
+
+function setLoading(isLoading) {
+    loginButton.disabled = isLoading;
+    loginButton.classList.toggle("loading", isLoading);
+    buttonText.textContent = isLoading ? "Signing in..." : "Sign In";
+}
+
+function showMessage(message) {
+    messageEl.textContent = message;
+    messageEl.classList.add("show");
+}
+
+function clearMessage() {
+    messageEl.textContent = "";
+    messageEl.classList.remove("show");
 }
 </script>
 

@@ -7,6 +7,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase.js"></script>
+<script src="auth.js"></script>
 
 <style>
 /* ─── Base ─────────────────────────────────────────── */
@@ -284,10 +285,9 @@ body {
 <div id="toast"></div>
 
 <script>
-const supabaseClient = window.supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_ANON_KEY
-);
+const supabaseClient = window.supabaseClient;
+
+window.auth.requireAuth();
 
 /* ── ID generators ──────────────────────────── */
 function generateInvoiceNumber() {
